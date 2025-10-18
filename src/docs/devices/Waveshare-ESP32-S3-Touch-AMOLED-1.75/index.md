@@ -67,6 +67,19 @@ wifi:
     ssid: "${friendly_name} Fallback Hotspot"
     password: "6T3RFWEF71"
 
+# Bus Configuration
+i2c:
+  - id: bus_a
+    sda: GPIO15
+    scl: GPIO14
+    scan: true
+
+i2s_audio:
+  - id: i2s_a
+    i2s_lrclk_pin: GPIO45
+    i2s_bclk_pin: GPIO9
+    i2s_mclk_pin: GPIO42
+
 spi:
   - id: flash_spi
     type: quad
@@ -85,20 +98,18 @@ spi:
       - GPIO6
       - GPIO7
 
+# Device Configuration
 display:
   - platform: mipi_spi
     model: CO5300
+    bus_mode: quad
+    reset_pin: GPIO39
+    cs_pin: GPIO12
 
-i2c:
-  - id: bus_a
-    sda: GPIO15
-    scl: GPIO14
-    scan: true
-
-i2s_audio:
-  - id: i2s_a
-    i2s_lrclk_pin: GPIO45
-    i2s_bclk_pin: GPIO9
-    i2s_mclk_pin: GPIO42
+lvgl:
+  widgets:
+    - label:
+        align: CENTER
+        text: 'Hello World!' 
 
 ```
