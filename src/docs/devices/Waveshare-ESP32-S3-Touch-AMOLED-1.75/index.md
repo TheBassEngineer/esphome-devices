@@ -73,6 +73,12 @@ wifi:
     ssid: "${friendly_name} Fallback Hotspot"
     password: "6T3RFWEF71"
 
+# Include external components
+external_components:
+  - source: 
+      type: git
+      url: https://github.com/shelson/esphome-cst9217
+
 # Bus Configuration
 i2c:
   - id: bus_a
@@ -135,7 +141,7 @@ output:
     write_action:
       then:
         - lambda: |-
-            id(disp1).set_brightness(state);
+            id(disp1).set_brightness(state*255);
 
 number:
   - platform: template
@@ -152,19 +158,29 @@ number:
 
 # Touchscreen Configuration
 touchscreen:
-  - platform: cst816
+  - platform: cst9217
     display: disp1
     id: ts_disp1
     interrupt_pin: GPIO11
     reset_pin: GPIO40
+    transform:
+      mirror_x: true
+      mirror_y: true
+    on_update:
+      - lambda: |-
+          for (auto touch: touches)  {
+              if (touch.state <= 2) {
+                 ESP_LOGI("Touch points:", "id=%d x=%d, y=%d", touch.id, touch.x, touch.y);
+              }
+          }
     on_release:
       - if:
-        condition: lvgl.is_paused
-        then:
-          - logger.log: "LVGL resuming"
-          - lvgl.resume:
-          - lvgl.widget.redraw:
-          - light.turn_on: display_backlight
+          condition: lvgl.is_paused
+          then:
+            - logger.log: "LVGL resuming"
+            - lvgl.resume:
+            - lvgl.widget.redraw:
+            - light.turn_on: display_backlight
 
 # LVGL Configuration
 lvgl:
