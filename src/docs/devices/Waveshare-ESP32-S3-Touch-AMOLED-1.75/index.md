@@ -7,6 +7,8 @@ board: esp32-s3
 difficulty: 2
 ---
 
+![Waveshare-ESP32-S3-Touch-AMOLED-1.75](Waveshare-ESP32-S3-Touch-AMOLED-1.75.png "Waveshare-ESP32-S3-Touch-AMOLED-1.75.png")
+
 ## Product specs
 
 | Feature      | Spec                    |
@@ -45,6 +47,10 @@ esp32:
   flash_size: 16MB
   framework:
     type: esp-idf
+
+psram:
+  mode: octal
+  speed: 80MHz
 
 # Enable logging
 logger:
@@ -98,18 +104,79 @@ spi:
       - GPIO6
       - GPIO7
 
-# Device Configuration
+# Display Configuration
 display:
   - platform: mipi_spi
+    id: disp1
     model: CO5300
     bus_mode: quad
     reset_pin: GPIO39
     cs_pin: GPIO12
+    dimenions:
+      height: 466
+      width: 466
 
+light:
+  - platform: monochromatic
+    id: display_backlight
+    name: "Backlight"
+    output: backlight_brightness
+    default_transition_length:
+      milliseconds: 0
+    initial_state:
+      brightness: 81%
+    restore_mode:
+      ALWAYS_ON
+
+output:
+  - platform: template
+    id: backlight_brightness
+    type: float
+    write_action:
+      then:
+        - lambda: |-
+            id(disp1).set_brightness(state);
+
+number:
+  - platform: template
+    name: Display timeout
+    optimistic: true
+    id: display_timeout
+    unit_of_measurement: "s"
+    initial_value: 45
+    restore_value: true
+    min_value: 10
+    max_value: 180
+    step: 5
+    mode: box
+
+# Touchscreen Configuration
+touchscreen:
+  - platform: cst816
+    display: disp1
+    id: ts_disp1
+    interrupt_pin: GPIO11
+    reset_pin: GPIO40
+    on_release:
+      - if:
+        condition: lvgl.is_paused
+        then:
+          - logger.log: "LVGL resuming"
+          - lvgl.resume:
+          - lvgl.widget.redraw:
+          - light.turn_on: display_backlight
+
+# LVGL Configuration
 lvgl:
   widgets:
     - label:
         align: CENTER
-        text: 'Hello World!' 
+        text: 'Hello World!'
+  on_idle:
+    timeout: !lambda "return (id(display_timeout).state * 1000);"
+    then:
+      - logger.log: "LVGL is idle"
+      - light.turn_off: display_backlight
+      - lvgl.pause:  
 
 ```
