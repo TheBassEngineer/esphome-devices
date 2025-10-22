@@ -2,7 +2,7 @@
 title: Waveshare ESP32-S3-Touch-AMOLED-1.75
 date-published: 2025-10-18
 type: misc
-standard: uk, us, global
+standard: global
 board: esp32-s3
 difficulty: 2
 ---
@@ -30,6 +30,13 @@ Avalible on [Waveshare](https://www.waveshare.com/esp32-s3-touch-amoled-1.75.htm
 substitutions:
   name: "waveshare-s3-amoled-175"
   friendly_name: "Waveshare-S3-AMOLED-1.75in"
+  # I2S Audio Config
+  i2s_mclk_multiple: 256
+  i2s_bps_spk: 16bit
+  i2s_bps_mic: 16bit
+  i2s_sample_rate_spk: 44100
+  i2s_sample_rate_mic: 44100
+  i2s_use_apll: true
 
 esphome:
   name: "${name}"
@@ -78,6 +85,11 @@ external_components:
   - source: 
       type: git
       url: https://github.com/shelson/esphome-cst9217
+  - source:
+      type: git
+      url: https://github.com/sw3Dan/waveshare-s2-audio_esphome_voice
+      ref: main
+    components: [es8311]
 
 # Bus Configuration
 i2c:
@@ -87,20 +99,23 @@ i2c:
     scan: true
 
 i2s_audio:
-  - id: i2s_a
-    i2s_lrclk_pin: GPIO45
-    i2s_bclk_pin: GPIO9
+  - id: i2s_out
+    i2s_lrclk_pin:
+      number: GPIO45
+      allow_other_uses: true
+    i2s_bclk_pin:
+      number: GPIO9
+      allow_other_uses: true
     i2s_mclk_pin: GPIO42
+  - id: i2s_in
+    i2s_lrclk_pin:
+      number: GPIO45
+      allow_other_uses: true
+    i2s_bclk_pin: 
+      number: GPIO9
+      allow_other_uses: true
 
 spi:
-  - id: flash_spi
-    type: quad
-    clk_pin: SPICLK
-    data_pins:
-      - SPID
-      - SPIQ
-      - SPIWP
-      - SPIHD
   - id: display_qspi
     type: quad
     clk_pin: GPIO38
@@ -109,6 +124,81 @@ spi:
       - GPIO5
       - GPIO6
       - GPIO7
+
+# ADC and Mic Configuration
+audio_adc:
+  - platform: es7210
+    id: adc_bus_a
+    bits_per_sample: $i2s_bps_mic
+    sample_rate: $i2s_sample_rate_mic
+
+microphone:
+  - platform: i2s_audio
+    id: mic_a
+    adc_type: external
+    i2s_din_pin: GPIO10
+    i2s_audio_id: i2s_in
+    i2s_mode: secondary
+    mclk_multiple: $i2s_mclk_multiple
+    sample_rate: $i2s_sample_rate_mic
+    bits_per_sample: $i2s_bps_mic
+    pdm: False
+
+# DAC and Speaker Configuration
+audio_dac:
+  - platform: es8311
+    id: dac_bus_a
+    bits_per_sample: $i2s_bps_spk
+    sample_rate: $i2s_sample_rate_spk
+    use_mclk: True
+    force_master: true
+    mclk_multiple: $i2s_mclk_multiple
+
+speaker:
+  - platform: i2s_audio
+    i2s_audio_id: i2s_out
+    id: speaker_a
+    i2s_dout_pin: GPIO8
+    i2s_mode: secondary
+    dac_type: external
+    timeout: never
+    buffer_duration: 100ms
+    audio_dac: dac_bus_a
+    sample_rate: $i2s_sample_rate_spk
+    bits_per_sample: $i2s_bps_spk
+    use_apll: $i2s_use_apll
+    mclk_multiple: $i2s_mclk_multiple
+    channel: stereo
+  - platform: mixer
+    id: speaker_a_mixer
+    output_speaker: speaker_a
+    num_channels: 2
+    source_speakers: 
+      - id: speaker_a_announce_in
+      - id: speaker_a_media_in
+  - platform: resampler
+    id: speaker_a_resample_media
+    output_speaker: speaker_a_media_in
+  - platform: resampler
+    id: speaker_a_resample_announce
+    output_speaker: speaker_a_announce_in
+
+media_player:
+  - platform: speaker
+    name: "Speaker Media Player"
+    id: speaker_a_media_player
+    media_pipeline:
+      speaker: speaker_a_resample_media
+      num_channels: 2
+    announcement_pipeline: 
+      speaker: speaker_a_resample_announce
+      num_channels: 1
+
+switch:
+  - platform: gpio
+    name: "Speaker Enable"
+    pin: GPIO46
+    restore_mode: RESTORE_DEFAULT_ON
 
 # Display Configuration
 display:
@@ -184,6 +274,7 @@ touchscreen:
 
 # LVGL Configuration
 lvgl:
+  default_font: montserrat_28
   widgets:
     - label:
         align: CENTER
