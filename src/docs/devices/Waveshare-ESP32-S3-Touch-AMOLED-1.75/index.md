@@ -31,7 +31,6 @@ substitutions:
   name: "waveshare-s3-amoled-175"
   friendly_name: "Waveshare-S3-AMOLED-1.75in"
   # I2S Audio Config
-  i2s_mclk_multiple: 256
   i2s_bps_spk: 16bit
   i2s_bps_mic: 16bit
   i2s_sample_rate_spk: 44100
@@ -78,7 +77,7 @@ wifi:
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "${friendly_name} Fallback Hotspot"
-    password: "6T3RFWEF71"
+    password: !secret hotspot_password
 
 # Include external components
 external_components:
@@ -157,30 +156,6 @@ speaker:
     bits_per_sample: $i2s_bps_spk
     use_apll: $i2s_use_apll
     channel: stereo
-  - platform: mixer
-    id: speaker_a_mixer
-    output_speaker: speaker_a
-    num_channels: 2
-    source_speakers: 
-      - id: speaker_a_announce_in
-      - id: speaker_a_media_in
-  - platform: resampler
-    id: speaker_a_resample_media
-    output_speaker: speaker_a_media_in
-  - platform: resampler
-    id: speaker_a_resample_announce
-    output_speaker: speaker_a_announce_in
-
-media_player:
-  - platform: speaker
-    name: "Speaker Media Player"
-    id: speaker_a_media_player
-    media_pipeline:
-      speaker: speaker_a_resample_media
-      num_channels: 2
-    announcement_pipeline: 
-      speaker: speaker_a_resample_announce
-      num_channels: 1
 
 switch:
   - platform: gpio
@@ -221,19 +196,6 @@ output:
         - lambda: |-
             id(disp1).set_brightness(state*255);
 
-number:
-  - platform: template
-    name: Display timeout
-    optimistic: true
-    id: display_timeout
-    unit_of_measurement: "s"
-    initial_value: 45
-    restore_value: true
-    min_value: 10
-    max_value: 180
-    step: 5
-    mode: box
-
 # Touchscreen Configuration
 touchscreen:
   - platform: cst9217
@@ -251,27 +213,5 @@ touchscreen:
                  ESP_LOGI("Touch points:", "id=%d x=%d, y=%d", touch.id, touch.x, touch.y);
               }
           }
-    on_release:
-      - if:
-          condition: lvgl.is_paused
-          then:
-            - logger.log: "LVGL resuming"
-            - lvgl.resume:
-            - lvgl.widget.redraw:
-            - light.turn_on: display_backlight
-
-# LVGL Configuration
-lvgl:
-  default_font: montserrat_28
-  widgets:
-    - label:
-        align: CENTER
-        text: 'Hello World!'
-  on_idle:
-    timeout: !lambda "return (id(display_timeout).state * 1000);"
-    then:
-      - logger.log: "LVGL is idle"
-      - light.turn_off: display_backlight
-      - lvgl.pause:  
 
 ```
