@@ -85,11 +85,6 @@ external_components:
   - source: 
       type: git
       url: https://github.com/shelson/esphome-cst9217
-  - source:
-      type: git
-      url: https://github.com/sw3Dan/waveshare-s2-audio_esphome_voice
-      ref: main
-    components: [es8311]
 
 # Bus Configuration
 i2c:
@@ -138,8 +133,6 @@ microphone:
     adc_type: external
     i2s_din_pin: GPIO10
     i2s_audio_id: i2s_in
-    i2s_mode: secondary
-    mclk_multiple: $i2s_mclk_multiple
     sample_rate: $i2s_sample_rate_mic
     bits_per_sample: $i2s_bps_mic
     pdm: False
@@ -150,16 +143,12 @@ audio_dac:
     id: dac_bus_a
     bits_per_sample: $i2s_bps_spk
     sample_rate: $i2s_sample_rate_spk
-    use_mclk: True
-    force_master: true
-    mclk_multiple: $i2s_mclk_multiple
 
 speaker:
   - platform: i2s_audio
     i2s_audio_id: i2s_out
     id: speaker_a
     i2s_dout_pin: GPIO8
-    i2s_mode: secondary
     dac_type: external
     timeout: never
     buffer_duration: 100ms
@@ -167,7 +156,6 @@ speaker:
     sample_rate: $i2s_sample_rate_spk
     bits_per_sample: $i2s_bps_spk
     use_apll: $i2s_use_apll
-    mclk_multiple: $i2s_mclk_multiple
     channel: stereo
   - platform: mixer
     id: speaker_a_mixer
