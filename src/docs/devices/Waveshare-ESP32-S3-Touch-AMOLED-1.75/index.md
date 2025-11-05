@@ -31,11 +31,9 @@ Case and GPS versions are also available.
 substitutions:
   name: "waveshare-s3-amoled-175"
   friendly_name: "Waveshare-S3-AMOLED-1.75in"
-  # I2S Audio Config
-  i2s_bps_spk: 16bit
-  i2s_bps_mic: 16bit
-  i2s_sample_rate_spk: 44100
-  i2s_sample_rate_mic: 44100
+  # Shared I2S Audio Config
+  i2s_bps: 16bit
+  i2s_sample_rate: 44100
   i2s_use_apll: true
 
 esphome:
@@ -80,21 +78,10 @@ i2c:
     scan: true
 
 i2s_audio:
-  - id: i2s_out
-    i2s_lrclk_pin:
-      number: GPIO45
-      allow_other_uses: true
-    i2s_bclk_pin:
-      number: GPIO9
-      allow_other_uses: true
+  - id: i2s_common
+    i2s_lrclk_pin: GPIO45
+    i2s_bclk_pin: GPIO9
     i2s_mclk_pin: GPIO42
-  - id: i2s_in
-    i2s_lrclk_pin:
-      number: GPIO45
-      allow_other_uses: true
-    i2s_bclk_pin: 
-      number: GPIO9
-      allow_other_uses: true
 
 spi:
   - id: display_qspi
@@ -110,37 +97,39 @@ spi:
 audio_adc:
   - platform: es7210
     id: adc_bus_a
-    bits_per_sample: $i2s_bps_mic
-    sample_rate: $i2s_sample_rate_mic
+    bits_per_sample: $i2s_bps
+    sample_rate: $i2s_sample_rate
 
 microphone:
   - platform: i2s_audio
     id: mic_a
     adc_type: external
     i2s_din_pin: GPIO10
-    i2s_audio_id: i2s_in
-    sample_rate: $i2s_sample_rate_mic
-    bits_per_sample: $i2s_bps_mic
+    i2s_audio_id: i2s_common
+    channel: stereo
+    sample_rate: $i2s_sample_rate
+    bits_per_sample: $i2s_bps
     pdm: False
+    use_apll: $i2s_use_apll
 
 # DAC and Speaker Configuration
 audio_dac:
   - platform: es8311
     id: dac_bus_a
-    bits_per_sample: $i2s_bps_spk
-    sample_rate: $i2s_sample_rate_spk
+    bits_per_sample: $i2s_bps
+    sample_rate: $i2s_sample_rate
 
 speaker:
   - platform: i2s_audio
-    i2s_audio_id: i2s_out
+    i2s_audio_id: i2s_common
     id: speaker_a
     i2s_dout_pin: GPIO8
     dac_type: external
     timeout: never
     buffer_duration: 100ms
     audio_dac: dac_bus_a
-    sample_rate: $i2s_sample_rate_spk
-    bits_per_sample: $i2s_bps_spk
+    sample_rate: $i2s_sample_rate
+    bits_per_sample: $i2s_bps
     use_apll: $i2s_use_apll
     channel: stereo
 
