@@ -106,7 +106,7 @@ microphone:
     adc_type: external
     i2s_din_pin: GPIO10
     i2s_audio_id: i2s_common
-    channel: stereo
+    channel: right
     sample_rate: $i2s_sample_rate
     bits_per_sample: $i2s_bps
     pdm: False
@@ -131,7 +131,7 @@ speaker:
     sample_rate: $i2s_sample_rate
     bits_per_sample: $i2s_bps
     use_apll: $i2s_use_apll
-    channel: stereo
+    channel: mono
 
 switch:
   - platform: gpio
